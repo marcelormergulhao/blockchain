@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta http-equiv="refresh" content="20" >
     <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css')}}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <title>DevWeek Voting</title>
@@ -25,7 +26,7 @@
                             <ul class="vote_list">
                                 {% for block in blockchain.blockchain %} {% for transaction in block["data"] %} {% if transaction["addr_to"] == candidate.address
                                 %}
-                                <li class="vote">transaction["addr_from"]</li>
+                                <li class="vote">{{transaction["addr_from"]}}</li>
                                 {% endif %} {% endfor %} {% endfor %}
                             </ul>
                         </div>
