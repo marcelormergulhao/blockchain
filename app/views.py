@@ -19,24 +19,36 @@ def cast_vote():
 @app.route("/list")
 def get_miner_list():
     """Return list of miners advertised to this node"""
-    pass
+    return jsonify(blockchain.participant_list)
 
-@app.route("/advertise")
+@app.route("/advertise", methods=["POST"])
 def advertise():
     """Receive node advertisement and store on miner list"""
-    pass
+    received_data = request.get_json()
+    if received_data is not None:
+        blockchain.add_participant_to_list(received_data)
+    return jsonify({"status": "ok"})
 
 @app.route("/blockchain")
 def get_blockchain():
     """Return current blockchain"""
-    pass
+    return jsonify(blockchain.blockchain)
 
 @app.route("/update_pool", methods=["POST"])
 def add_transaction():
     """Update transaction pool"""
     pass
+    # received_data = request.get_json()
+    # if received_data is not None:
+    #     print("Received Pool {}".format(received_data))
+    #     blockchain.update_pool(received_data)
+    # return redirect("/status")
 
 @app.route("/add_new_block", methods=["POST"])
 def add_block():
     """Add block to chain"""
-    pass
+    received_data = request.get_json()
+    if request.json is not None:
+        print("Received Block {}".format(received_data))
+        blockchain.validate_and_add_block(received_data)
+    return jsonify({"status": "ok"})
