@@ -59,7 +59,9 @@ class Blockchain():
         self.blockchain = None
         self.get_current_blockchain()
         # Valid addresses you can issue a vote to
-        self.valid_addresses = ["12345"]
+        self.valid_addresses = [{"name": "Candidate 1", "address": "12345"},
+                                {"name": "Candidate 2", "address": "5678"},
+                                {"name": "Candidate 3", "address": "9999"}]
         self.transaction_pool = []
 
     def get_current_participant_list(self):
@@ -158,8 +160,9 @@ class Blockchain():
 
     def check_valid_address(self, address):
         logger.info("Check destination address")
-        if address in self.valid_addresses:
-            return True
+        for valid_candidate in self.valid_addresses:
+            if address in valid_candidate["address"]:
+                return True
         return False
 
     def create_genesis_block(self):

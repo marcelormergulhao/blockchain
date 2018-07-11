@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css')}}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <title>DevWeek Voting</title>
+</head>
+
+<body>
+    <div class="container">
+        <div class="jumbotron">
+            <h1 class="voting_header">Current Status</h1>
+            <div class="voting_status">
+                {% for candidate in blockchain.valid_addresses %}
+                <div class="card">
+                    <div class="card-body">
+                        <div class="candidate_summary">
+                            <p>Name: {{ candidate.name }}</p>
+                            <p>Address: {{ candidate.address }}</p>
+                            <p>Current Votes:</p>
+                            <ul class="vote_list">
+                                {% for block in blockchain.blockchain %} {% for transaction in block["data"] %} {% if transaction["addr_to"] == candidate.address
+                                %}
+                                <li class="vote">transaction["addr_from"]</li>
+                                {% endif %} {% endfor %} {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <form class="voting_form" action="/cast_vote" method="POST">
+                        <span>Vote for:</span>
+                        <input name="vote_addr" type="text" placeholder="Write candidate address here" />
+                        <button type="submit">Vote</button>
+                    </form>
+                </div>
+            </div>
+            <div class="transaction_pool">
+                <div class="card">
+                    <div class="card-body">
+                        <p>Transaction Pool</p>
+                        <ul>
+                            {% for transaction in blockchain.transaction_pool %}
+                            <li>From {{transaction["addr_from"]}} to {{transaction["addr_to"]}}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

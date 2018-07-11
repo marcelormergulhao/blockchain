@@ -1,10 +1,20 @@
-from flask import request, jsonify
+from flask import request, jsonify, render_template, redirect
 from app import app
 from app.models import Blockchain,Block
 
+blockchain = Blockchain()
+
 @app.route("/")
+@app.route("/status")
 def index():
-    return "Welcome to the blockchain APP"
+    return render_template("status.html", blockchain=blockchain)
+
+@app.route("/cast_vote", methods=["POST"])
+def cast_vote():
+    if request.form is not None:
+        print("Cast vote to {}".format(request.form["vote_addr"]))
+        blockchain.add_transaction_to_pool(request.form["vote_addr"])
+    return redirect("/status")
 
 @app.route("/list")
 def get_miner_list():
