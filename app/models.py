@@ -157,7 +157,7 @@ class Blockchain():
             if self.check_valid_address(addr_to):
                 transaction = Transaction(self.miner_id, addr_to)
                 self.transaction_pool.append(transaction.get_json())
-                self.propagate_pool()
+                self.propagate_transaction(transaction.get_json())
                 if self.block_creator:
                     if not self.sched.get_jobs():
                         logger.info("Start block schedule")
@@ -235,13 +235,13 @@ class Blockchain():
     def generate_miner_id(self):
         return str(random.randint(0, 10000))
 
-    def propagate_pool(self):
-        logger.info("Propagate transaction pool")
+    def propagate_transaction(self, transaction):
+        logger.info("Propagate transaction")
         for peer in self.participant_list:
             if peer["address"] != self.address:
-                r = requests.post("http://" + peer["address"] + "/update_pool", json = self.transaction_pool)
+                r = requests.post("http://" + peer["address"] + "/update_pool", json = transaction)
                 if r.status_code == 200:
-                    logger.info("Sent pool to {}".format(peer["address"]))
+                    logger.info("Sent transaction to {}".format(peer["address"]))
 
     def propagate_block(self, block):
         logger.info("Propagate block")
@@ -269,6 +269,15 @@ class Blockchain():
                     self.remove_transactions_from_pool(block)
                     self.propagate_block(block)
         return
+
+    def validate_and_add_transaction(self, transaction):
+        logger.info("Transaction received: {}".format(transaction))
+        for valid_addr in self.valid_addresses:
+            if transaction["addr_to"] == valid_addr["address"]:
+                self.transaction_pool.append(transaction)
+                break 
+        return
+
 
     def get_current_address(self):
         return "localhost:5000"

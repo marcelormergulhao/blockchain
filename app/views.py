@@ -37,12 +37,11 @@ def get_blockchain():
 @app.route("/update_pool", methods=["POST"])
 def add_transaction():
     """Update transaction pool"""
-    pass
-    # received_data = request.get_json()
-    # if received_data is not None:
-    #     print("Received Pool {}".format(received_data))
-    #     blockchain.update_pool(received_data)
-    # return redirect("/status")
+    received_data = request.get_json()
+    if received_data is not None:
+        print("Received Pool {}".format(received_data))
+        blockchain.validate_and_add_transaction(received_data)
+    return redirect("/status")
 
 @app.route("/add_new_block", methods=["POST"])
 def add_block():
