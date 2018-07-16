@@ -4,8 +4,14 @@ import json
 import requests
 import logging
 import sys
+import os
 from datetime import datetime,timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
+
+from Crypto.Signature import PKCS1_v1_5
+from Crypto.PublicKey import RSA
+from Crypto.Hash import SHA256
+from base64 import b64encode, b64decode
 
 # Log configuration
 logging.basicConfig(format = "%(asctime)-15s %(message)s", stream=sys.stdout)
@@ -16,9 +22,25 @@ class Transaction():
     def __init__(self, addr_from, addr_to):
         self.addr_from = addr_from
         self.addr_to = addr_to
+        self.signature = None
+
+    def sign(self, key):
+        signer = PKCS1_v1_5.new(key)
+        digest = SHA256.new()
+        digest.update(str(self.get_json()).encode())
+        self.signature = b64encode(signer.sign(digest)).decode()
 
     def get_json(self):
         return {"addr_from": self.addr_from, "addr_to": self.addr_to}
+
+    def get_signed_json(self, key):
+        if self.signature is None:
+            self.sign(key)
+
+        # Use this append "==" trick to avoid incorrect padding
+        pubkey = b64encode(key.publickey().exportKey("PEM") + b"==").decode()
+        return {"addr_from": self.addr_from, "addr_to": self.addr_to,
+                "signature": self.signature, "pubkey": pubkey}
         
 
 class Block():
@@ -37,7 +59,8 @@ class Block():
         logger.info("Mining node")
         while True:
             # Get hash from complete block, discarding own hash
-            sha256 = hashlib.sha256(json.dumps(self.block).encode())
+            sha256 = SHA256.new()
+            sha256.update(json.dumps(self.block).encode())
             hexdigest = sha256.hexdigest()
             if hexdigest[0:3] == "000":
                 self.block["hash"] = hexdigest
@@ -56,7 +79,7 @@ class Blockchain():
         """
         self.master_node = "localhost:5000"
         random.seed()
-        self.miner_id = self.generate_miner_id()
+        self.generate_miner_id()
         self.address = self.get_current_address()
         self.participant_list = []
         self.get_current_participant_list()
@@ -156,8 +179,8 @@ class Blockchain():
         if self.has_to_vote():
             if self.check_valid_address(addr_to):
                 transaction = Transaction(self.miner_id, addr_to)
-                self.transaction_pool.append(transaction.get_json())
-                self.propagate_transaction(transaction.get_json())
+                self.transaction_pool.append(transaction.get_signed_json(self.private_key))
+                self.propagate_transaction(transaction.get_signed_json(self.private_key))
                 if self.block_creator:
                     if not self.sched.get_jobs():
                         logger.info("Start block schedule")
@@ -197,7 +220,7 @@ class Blockchain():
     def create_genesis_block(self):
         logger.info("Creating genesis block")
         transaction = Transaction("Genesis Addr", "Genesis Block")
-        genesis = Block("Genesis Block", 0, [transaction.get_json()], self.miner_id)
+        genesis = Block("Genesis Block", 0, [transaction.get_signed_json(self.private_key)], self.miner_id)
         genesis.mine()
         self.blockchain = [genesis.get_json()]
 
@@ -233,7 +256,31 @@ class Blockchain():
             print(block)
 
     def generate_miner_id(self):
-        return str(random.randint(0, 10000))
+        """
+        Check if there is already an ID for this node and load it, otherwise create.
+        Also, keep a private key to use when signing transactions
+        """
+        if os.path.isfile("private_key.pem") :
+            logger.info("Loading private key")
+            with open("private_key.pem") as fr:
+                self.private_key = RSA.importKey(fr.read())
+            
+            with open("miner_id.txt") as fr:
+                self.miner_id = fr.read()
+
+        else:
+            logger.info("Create new miner ID")
+            self.miner_id = str(random.randint(0, 10000))
+            logger.info("Saving miner ID")
+            with open("miner_id.txt", "w") as fw:
+                fw.write(self.miner_id)
+
+            logger.info("Create private key")
+            self.private_key = RSA.generate(1024)
+            with open("private_key.pem", "w") as fw:
+                fw.write(self.private_key.exportKey("PEM").decode())
+            
+        return 
 
     def propagate_transaction(self, transaction):
         logger.info("Propagate transaction")
@@ -272,10 +319,22 @@ class Blockchain():
 
     def validate_and_add_transaction(self, transaction):
         logger.info("Transaction received: {}".format(transaction))
-        for valid_addr in self.valid_addresses:
-            if transaction["addr_to"] == valid_addr["address"]:
-                self.transaction_pool.append(transaction)
-                break 
+        # First check if the signature is ok
+        t_sig = b64decode(transaction["signature"].encode())
+        pubkey = b64decode(transaction["pubkey"].encode())
+        verifier = PKCS1_v1_5.new(RSA.importKey(pubkey))
+        digest = SHA256.new()
+        t = Transaction(transaction["addr_from"], transaction["addr_to"])
+        digest.update(str(t.get_json()).encode())
+        verified = verifier.verify(digest,t_sig)
+        if verified:
+            logger.info("Verified signature")
+            for valid_addr in self.valid_addresses:
+                if transaction["addr_to"] == valid_addr["address"]:
+                    self.transaction_pool.append(transaction)
+                    break
+        else:
+            logger.info("Signature is invalid")
         return
 
 

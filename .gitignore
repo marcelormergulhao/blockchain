@@ -1,3 +1,5 @@
 .vscode
 env/
 *__pycache__
+miner_id.txt
+private_key.pem
