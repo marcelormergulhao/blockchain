@@ -13,21 +13,19 @@ logger = logging.getLogger("blockchain_logger")
 logger.setLevel(logging.DEBUG)
 
 class Transaction():
-    """
-    This class contains the definition of what is stored in blocks and
-    implements the signing scheme.
-    """
     def __init__(self, addr_from, addr_to):
         """
-        Transaction initialization, just populate source and destination
+        Inicialização da transação.
+        TODO: dados os endereços de origem e destino, apenas armazena os valores.
         """
-        self.addr_from = addr_from
-        self.addr_to = addr_to
-        self.signature = None
+        pass
 
     def sign(self, key):
         """
-        Sign JSON from current transaction with provided key.
+        Assina o JSON da transação com a chave passada como argumento.
+        TODO: Criar procedimento de assinatura e armazenar em variável interna.
+        O resultado da assinatura deve passar por uma codificação em base64 (b64encode) e
+        posteriormente ser decodificado em UTF-8 (decode) para ser compatível com o resto do código.
         """
         signer = PKCS1_v1_5.new(key)
         digest = SHA256.new()
@@ -36,22 +34,22 @@ class Transaction():
 
     def get_json(self):
         """
-        Return OrderedDict with "addr_from" and "addr_to" fields.
+        TODO: Retornar dicionário (OrderedDict) com os seguintes campos:
+        * addr_from: endereço do peer que originou a transação
+        * addr_to: endereço do candidato que receberá o voto
         """
-        ordered_json = OrderedDict({"addr_from": self.addr_from})
-        ordered_json["addr_to"] = self.addr_to
-        return ordered_json
+        pass
 
     def get_signed_json(self, key):
         """
-        Return OrderedDict containing "addr_from", "addr_to", "signature" and "pubkey".
-        """
-        if self.signature is None:
-            self.sign(key)
+        TODO: Retornar dicionário (OrderedDict) contendo:
+          * addr_from
+          * addr_to
+          * signature: assinatura gerada pelo método sign
+          * pubkey: chave pública que verificará a validade da assinatura
 
-        # Use this append "==" trick to avoid incorrect padding
-        pubkey = b64encode(key.publickey().exportKey("PEM") + b"==").decode()
-        ordered_json = self.get_json()
-        ordered_json["signature"] = self.signature
-        ordered_json["pubkey"] = pubkey
-        return ordered_json
+        A chave pública deve passar pelo mesma codificação que a assinatura.
+        Uma dica para evitar problemas de padding com a chave pública é adicionar um bytearray (b"==") ao final
+        do que será codificado com base64.
+        """
+        pass

@@ -9,8 +9,8 @@ from Crypto.Signature import PKCS1_v1_5
 from Crypto.PublicKey import RSA
 from base64 import b64encode, b64decode
 
-from app.models.block import Block
-from app.models.transaction import Transaction
+from app.models_solution.block import Block
+from app.models_solution.transaction import Transaction
 
 # Log configuration
 logging.basicConfig(format = "%(asctime)-15s %(message)s", stream=sys.stdout)
@@ -38,24 +38,27 @@ class Blockchain():
     
     def create_genesis_block(self, private_key, miner_id):
         """
-        Cria o primeiro bloco da cadeia.
-        TODO: Criar bloco com os seguintes campos:
-            * prevHash: Usar a string "Genesis Block"
-            * height: 0
-            * data: lista contendo uma transação de "Genesis Addr" para "Genesis Block" devidamente assinada
-            * miner_id: identificação do nó que está criando o bloco
-        Após criado, mineirar o bloco e então adicionar o resultado à lista storage
+        Create the first block of the chain, using specific values as transactions and previous hash.
         """
-        pass
+        logger.info("Creating genesis block")
+        transaction = Transaction("Genesis Addr", "Genesis Block")
+        genesis = Block("Genesis Block", 0, [transaction.get_signed_json(private_key)], miner_id)
+        genesis.mine()
+        self.storage = [genesis.get_json()]
 
     def check_double_spending(self, miner_id):
         """
-        Verificação de transações do endereço passado como argumento na cadeia.
-        TODO: Varrer a cadeia (lista storage) e as transações pendentes (lista transaction_pool)
-        para ver se o participante está tentando votar novamente.
-        Retornar True caso encontre um voto do participante e False caso contrário
+        Check the chain to find if miner has already voted.
         """
-        pass
+        for block in self.storage:
+            logger.info("Block {}".format(block))
+            transactions = block["data"]
+            for transaction in transactions:
+                logger.info("Checking transaction {}".format(transaction))
+                if transaction["addr_from"] == miner_id:
+                    logger.error("User has already issued his vote")
+                    return True
+        return False
 
     def has_transaction_in_pool(self, miner_id):
         """
@@ -78,31 +81,45 @@ class Blockchain():
         logger.info("New pool {}".format(self.transaction_pool))
         return
 
-    def get_transactions_from_data(self, data):
-        transactions = []
-        for t in data:
-            new_t = OrderedDict({"addr_from": t["addr_from"]})
-            new_t["addr_to"] = t["addr_to"]
-            new_t["signature"] = t["signature"]
-            new_t["pubkey"] = t["pubkey"]
-            transactions.append(new_t)
-        return transactions
-
     def validate_block(self, block, prevBlock):
         """
-        Valida integridade do bloco e se ele é compatível com o anterior na cadeia.
-        TODO: Dado o bloco e o anterior como dicionários, validar:
-            * Se a hash do bloco anterior está referenciada no candidato
-            * Se há "Proof of Work"
-            * Se a hash no bloco corresponde de fato ao SHA256 do conteúdo do bloco
-              * Uma sugestão é criar um bloco novo, referenciando os campos do que foi recebido
-               e alterar na mão o nonce. Para manter a ordem das transações e seus campos, a sugestão é
-               usar a função "get_transactions_from_data(data)", já fornecida 
-            * Se as transações contidas no bloco são válidas (assinadas e sem duplicação)
-              * Há as função "validate_transaction(t)" para validar a assinatura e "check_double_spend()" para duplicação
-            Retornar True se o bloco for válido e False caso contrário
+        Validate block data and if it should be the next on the chain.
         """
-        pass
+        logger.info("Validate block")
+        if prevBlock is not None:
+            # Validate consistence with blockchain
+            if block["prevHash"] == prevBlock["hash"]:
+                logger.info("Block is consistent with blockchain")
+                # Validate PoW
+                if block["hash"][0:3] == "000":
+                    logger.info("Block has PoW")
+                    # Validate the block hash is from itself, create same block structure
+                    transactions = []
+                    for t in block["data"]:
+                        new_t = OrderedDict({"addr_from": t["addr_from"]})
+                        new_t["addr_to"] = t["addr_to"]
+                        new_t["signature"] = t["signature"]
+                        new_t["pubkey"] = t["pubkey"]
+                        transactions.append(new_t)
+                        
+                    striped_block = Block(block["prevHash"], block["height"], transactions, block["miner"])
+                    striped_block.block["nonce"] = block["nonce"]
+                    striped_block.block["hash"] = ""
+                    logger.info("Striped {}".format(striped_block.get_json()))
+                    sha256 = SHA256.new()
+                    sha256.update(json.dumps(striped_block.get_json()).encode())
+                    hexdigest = sha256.hexdigest()
+                    if hexdigest == block["hash"]:
+                        logger.info("Block generates the hash provided")
+                        for transaction in block["data"]:
+                            if not self.validate_transaction(transaction) or self.check_double_spending(transaction["addr_from"]):
+                                return False
+                        logger.info("Block has all transactions valid")
+                        logger.info("Accept block")
+                        return True
+                    else:
+                        logger.info("Invalid block hash")
+        return False
 
     def create_and_add_block(self, miner_id):
         """

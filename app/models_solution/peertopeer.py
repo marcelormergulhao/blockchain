@@ -9,8 +9,8 @@ from datetime import datetime,timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from Crypto.PublicKey import RSA
 
-from app.models.blockchain import Blockchain
-from app.models.transaction import Transaction
+from app.models_solution.blockchain import Blockchain
+from app.models_solution.transaction import Transaction
 
 # Log configuration
 logging.basicConfig(format = "%(asctime)-15s %(message)s", stream=sys.stdout)

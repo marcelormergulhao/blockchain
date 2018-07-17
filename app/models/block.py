@@ -13,29 +13,24 @@ logger.setLevel(logging.DEBUG)
 
 class Block():
     def __init__(self, prevHash, height, data, miner):
-        self.block = OrderedDict({"miner": miner})
-        self.block["hash"] = ""
-        self.block["prevHash"] = prevHash
-        self.block["height"] = height
-        # Nonce will be used to "mine" node
-        self.block["nonce"] = 0
-        self.block["data"] = list(data)
+        """
+        TODO: Criar variável interna chamada "block" como um dicionário, contendo as seguintes chaves:
+         * hash: inicialmente vazia, vai armazenar a hash do bloco após mineirar
+         * prevHash: hash do bloco imediatamente anterior na cadeia
+         * height: indica a ordem do bloco na cadeia
+         * nonce: inteiro usado na mineiração
+         * data: lista de transações assinadas
+        """
+        self.block = OrderedDict()
+        pass
 
     def mine(self):
         """
-        Calculate valid hash from current transaction list
+        Executa o processo de Proof of Work, manipulando o nonce para que a hash tenha o formato esperado.
+        TODO: Encontrar hash que mostre a computação realizada, contendo "000" no início.
+        Após encontrar o hash, colocar no campo esperado e adicionar um campo chamado "timestamp" para validar o momento da criação.
         """
-        logger.info("Mining node")
-        while True:
-            # Get hash from complete block, discarding own hash
-            sha256 = SHA256.new()
-            sha256.update(json.dumps(self.block).encode())
-            hexdigest = sha256.hexdigest()
-            if hexdigest[0:3] == "000":
-                self.block["hash"] = hexdigest
-                self.block["timestamp"] = str(datetime.now().timestamp())
-                break
-            self.block["nonce"] = self.block["nonce"] + 1
+        pass
 
     def get_json(self):
         """
