@@ -22,7 +22,9 @@ class Block():
         self.block["data"] = list(data)
 
     def mine(self):
-        """Calculate valid hash from current transaction list"""
+        """
+        Calculate valid hash from current transaction list
+        """
         logger.info("Mining node")
         while True:
             # Get hash from complete block, discarding own hash
@@ -36,4 +38,7 @@ class Block():
             self.block["nonce"] = self.block["nonce"] + 1
 
     def get_json(self):
+        """
+        Return block as OrderedDict
+        """
         return self.block

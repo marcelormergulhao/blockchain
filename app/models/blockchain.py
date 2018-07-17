@@ -19,28 +19,37 @@ logger.setLevel(logging.DEBUG)
 
 class Blockchain():
     def __init__(self):
-        """
-        Initialize blockchain storage and possibly populate
-        """
         self.lock = Lock()
         self.t_lock = Lock()
         self.storage = []
         self.transaction_pool = []
 
     def empty(self):
+        """
+        Checks if the blockchain is empty
+        """
         return len(self.storage) == 0
 
     def setup_new_chain(self, json_list):
+        """
+        Start new chain (block list) from current result
+        """
         self.storage = list(json_list)
     
     def create_genesis_block(self, private_key, miner_id):
+        """
+        Create the first block of the chain, using specific values as transactions and previous hash.
+        """
         logger.info("Creating genesis block")
         transaction = Transaction("Genesis Addr", "Genesis Block")
         genesis = Block("Genesis Block", 0, [transaction.get_signed_json(private_key)], miner_id)
         genesis.mine()
         self.storage = [genesis.get_json()]
 
-    def check_transaction(self, miner_id):
+    def check_double_spending(self, miner_id):
+        """
+        Check the chain to find if miner has already voted.
+        """
         for block in self.storage:
             logger.info("Block {}".format(block))
             transactions = block["data"]
@@ -53,6 +62,7 @@ class Blockchain():
         for transaction in self.transaction_pool:
             if transaction["addr_from"] == miner_id:
                 logger.error("User has vote on transaction pool")
+                return True
         return False
 
     def remove_transactions_from_pool(self, block):
@@ -67,6 +77,9 @@ class Blockchain():
         return
 
     def validate_block(self, block, prevBlock):
+        """
+        Validate block data and if it should be the next on the chain.
+        """
         logger.info("Validate block")
         if prevBlock is not None:
             # Validate consistence with blockchain
@@ -104,6 +117,9 @@ class Blockchain():
         return False
 
     def create_and_add_block(self, miner_id):
+        """
+        Using miner_id and current transaction_pool, create block and add to chain.
+        """
         block = None
         if not self.empty():
             # Get last block
@@ -116,6 +132,9 @@ class Blockchain():
         return block
 
     def validate_transaction(self, transaction):
+        """
+        Validate that a transaction signature corresponds to the provided data
+        """
         t_sig = b64decode(transaction["signature"].encode())
         pubkey = b64decode(transaction["pubkey"].encode())
         verifier = PKCS1_v1_5.new(RSA.importKey(pubkey))
@@ -130,15 +149,21 @@ class Blockchain():
         return False
 
     def add_transaction_to_pool(self, transaction):
+        """
+        Add transaction to pool with concurrency protection
+        """
         self.t_lock.acquire()
         self.transaction_pool.append(transaction)
         self.t_lock.release()
         return
 
     def validate_and_add_block(self, block):
+        """
+        Validate block in JSON format and add to chain.
+        Change transaction pool accordingly.
+        """
         logger.info("Validate and add block")
         if len(self.storage) > 0:
-            # logger.info("Block received: {}".format(block))
             self.lock.acquire()
             current_head = self.storage[-1]
             # Check if node has the same height as the current head and untie the conflict with the timestamp
@@ -171,4 +196,7 @@ class Blockchain():
         return False
 
     def get_chain(self):
+        """
+        Return list representing the blockchain
+        """
         return self.storage

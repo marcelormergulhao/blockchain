@@ -80,6 +80,9 @@ class PeerToPeer():
                     done = True
 
     def get_current_blockchain(self):
+        """
+        Request current blockchain from another peer and save it.
+        """
         logger.info("Get current blockchain")
         if self.participant_list is not None:
             if len(self.participant_list) > 1:
@@ -100,6 +103,9 @@ class PeerToPeer():
             logger.error("Empty participant list, won't get blockchain for now")        
 
     def get_current_transaction_pool(self):
+        """
+        Request transaction pool from other peer and save it.
+        """
         logger.info("Get current transaction pool")
         if self.participant_list is not None:
             random_participant = random.randint(0,len(self.participant_list)-1)
@@ -134,11 +140,14 @@ class PeerToPeer():
         """
         logger.info("Checking blockchain for node votes")
         if not self.blockchain.empty():
-            if self.blockchain.check_transaction(self.miner_id):
+            if self.blockchain.check_double_spending(self.miner_id):
                 return False
         return True
 
     def check_valid_address(self, address):
+        """
+        Check if the value inserted is a valid candidate in the list
+        """
         logger.info("Check destination address")
         for valid_candidate in self.valid_addresses:
             if address in valid_candidate["address"]:
@@ -181,6 +190,9 @@ class PeerToPeer():
         return 
 
     def propagate_transaction(self, transaction):
+        """
+        Post generated transaction to all the peers in the list
+        """
         logger.info("Propagate transaction")
         for peer in self.participant_list:
             if peer["address"] != self.address:
@@ -189,6 +201,9 @@ class PeerToPeer():
                     logger.info("Sent transaction to {}".format(peer["address"]))
 
     def propagate_block(self, block):
+        """
+        Post generated block to all the peers in the list
+        """
         logger.info("Propagate block")
         for peer in self.participant_list:
             if peer["address"] != self.address:
@@ -198,10 +213,16 @@ class PeerToPeer():
 
 
     def validate_and_add_block(self, block):
+        """
+        Validate received block and add it to local chain
+        """
         self.blockchain.validate_and_add_block(block)
         return
 
     def validate_and_add_transaction(self, transaction):
+        """
+        Validate received transaction and add it to transaction pool
+        """
         logger.info("Transaction received: {}".format(transaction))
         # First check if the signature is ok
         if self.blockchain.validate_transaction(transaction):
@@ -216,10 +237,16 @@ class PeerToPeer():
         return
 
     def add_participant_to_list(self, peer):
+        """
+        Receive peer advertisement and add him to the list
+        """
         if peer not in self.participant_list:
             self.participant_list.append(peer)
 
     def advertise(self):
+        """
+        Post registration message to the current peers of the network
+        """
         logger.info("Advertise node to other peers")
         if len(self.participant_list) > 0:
             advertisement = {"miner_id":self.miner_id, "address": self.address}
