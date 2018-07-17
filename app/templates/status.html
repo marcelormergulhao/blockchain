@@ -24,7 +24,7 @@
                             <p>Address: {{ candidate.address }}</p>
                             <p>Current Votes:</p>
                             <ul class="vote_list">
-                                {% for block in blockchain.blockchain %} {% for transaction in block["data"] %} {% if transaction["addr_to"] == candidate.address
+                                {% for block in blockchain.blockchain.get_chain() %} {% for transaction in block["data"] %} {% if transaction["addr_to"] == candidate.address
                                 %}
                                 <li class="vote">{{transaction["addr_from"]}}</li>
                                 {% endif %} {% endfor %} {% endfor %}
@@ -48,7 +48,7 @@
                     <div class="card-body">
                         <p>Transaction Pool</p>
                         <ul>
-                            {% for transaction in blockchain.transaction_pool %}
+                            {% for transaction in blockchain.blockchain.transaction_pool %}
                             <li>From {{transaction["addr_from"]}} to {{transaction["addr_to"]}}</li>
                             {% endfor %}
                         </ul>
