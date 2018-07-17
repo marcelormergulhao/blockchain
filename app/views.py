@@ -1,6 +1,6 @@
 from flask import request, jsonify, render_template, redirect
 from app import app
-from app.models import Blockchain,Block,PeerToPeer
+from app.models.peertopeer import PeerToPeer
 
 network = PeerToPeer("localhost:5000")
 
