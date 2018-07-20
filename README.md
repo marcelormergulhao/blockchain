@@ -15,7 +15,7 @@ The app is built on Python 3 and is managed with pip, so create an virtual envir
 all the dependencies:
 
 ```
-virtualenv env --python=3.5
+virtualenv env --python=/usr/bin/python3.5
 pip install -r requirements.txt
 source env/bin/activate
 ```
