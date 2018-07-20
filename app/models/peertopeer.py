@@ -142,7 +142,7 @@ class PeerToPeer():
         if not self.blockchain.empty():
             if self.blockchain.check_double_spending(self.miner_id):
                 return False
-            is self.blockchain.has_transaction_in_pool(self.miner_id):
+            if self.blockchain.has_transaction_in_pool(self.miner_id):
                 return False
         return True
 
